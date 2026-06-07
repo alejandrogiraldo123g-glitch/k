@@ -3,13 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexsus21</title>
+    <title>Nexsus21 - IA Chat</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding-top: 50px; background-color: #121212; color: white; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #0b0f19; 
+            color: #ffffff; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .chat-container {
+            width: 100%;
+            max-width: 500px;
+            background: #131c2e;
+            border-radius: 15px;
+            border: 1px solid #00d4ff;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+        }
+        .chat-header {
+            background: #1c2a45;
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid #00d4ff;
+        }
+        .chat-header h1 { font-size: 1.5em; color: #00d4ff; }
+        .chat-header img { width: 50px; height: 50px; border-radius: 50px; margin-top: 10px; border: 2px solid #00d4ff; object-fit: cover; }
+        .chat-box {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .message { padding: 10px 15px; border-radius: 10px; max-width: 80%; line-height: 1.4; }
+        .user-msg { background: #00d4ff; color: #000; align-self: flex-end; font-weight: 500; }
+        .bot-msg { background: #22314d; color: #fff; align-self: flex-start; border-left: 3px solid #00d4ff; }
+        .input-area { display: flex; padding: 10px; background: #1c2a45; gap: 10px; }
+        input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #22314d;
+            border-radius: 8px;
+            background: #0b0f19;
+            color: white;
+            outline: none;
+        }
+        input:focus { border-color: #00d4ff; }
+        button {
+            padding: 0 20px;
+            background: #00d4ff;
+            border: none;
+            border-radius: 8px;
+            color: black;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover { background: #009ec2; }
     </style>
 </head>
 <body>
-    <h1>Nexsus21</h1>
-    <p>La inteligencia artificial está conectándose...</p>
+
+<div class="chat-container">
+    <div class="chat-header">
+        <h1>Nexsus21</h1>
+        <img src="https://images.ecestaticos.com/ad-CsJ33cti4Dw5WAPofxTVYV24=/0x424:2273x1701/1338x752/filters:fill(white):format(jpg)/f.elconfidencial.com%2Foriginal%2F700%2F6c4%2F3f5%2F7006c43f5ac22088236eda758ec8446a.jpg" alt="Nexsus Avatar">
+    </div>
+    
+    <div class="chat-box" id="chatBox">
+        <div class="message bot-msg">¡Hola! Soy **Nexsus21**, tu Inteligencia Artificial personalizada. ¿Qué quieres que hagamos hoy?</div>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="userInput" placeholder="Escribe un mensaje aquí..." onkeypress="evaluarEnter(event)">
+        <button onclick="enviarMensaje()">Enviar</button>
+    </div>
+</div>
+
+<script>
+    function evaluarEnter(e) {
+        if (e.key === 'Enter') enviarMensaje();
+    }
+
+    function enviarMensaje() {
+        let input = document.getElementById("userInput");
+        let mensajeTexto = input.value.trim();
+        if (mensajeTexto === "") return;
+
+        // Agregar mensaje del usuario
+        agregarMensaje(mensajeTexto, 'user-msg');
+        input.value = "";
+
+        // Respuesta simulada de la IA temporal (mientras conectamos tu API/Webhook)
+        setTimeout(() => {
+            let respuestaIA = procesarRespuestaLocal(mensajeTexto);
+            agregarMensaje(respuestaIA, 'bot-msg');
+        }, 800);
+    }
+
+    function agregarMensaje(texto, tipo) {
+        let chatBox = document.getElementById("chatBox");
+        let div = document.createElement("div");
+        div.className = "message " + tipo;
+        div.innerText = texto;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function procesarRespuestaLocal(msg) {
+        let texto = msg.toLowerCase();
+        if (texto.includes("hola")) return "¡Hola de nuevo! ¿Listo para programar?";
+        if (texto.includes("quien eres") || texto.includes("quién eres")) return "Soy Nexsus21, un bot inteligente en desarrollo.";
+        if (texto.includes("jugar")) return "¡Pronto tendré juegos integrados!";
+        return "Nexsus21 procesando... Entendido tu mensaje sobre: '" + msg + "'. Conéctame a n8n o una API para darte respuestas reales.";
+    }
+</script>
+
 </body>
 </html>
