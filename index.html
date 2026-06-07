@@ -22,8 +22,8 @@
             max-width: 500px;
             background: #131c2e;
             border-radius: 15px;
-            border: 1px solid #00d4ff;
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+            border: 1px solid #00ff66; /* Verde cibernético de activo */
+            box-shadow: 0 0 20px rgba(0, 255, 102, 0.2);
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -33,10 +33,11 @@
             background: #1c2a45;
             padding: 15px;
             text-align: center;
-            border-bottom: 1px solid #00d4ff;
+            border-bottom: 1px solid #00ff66;
         }
-        .chat-header h1 { font-size: 1.5em; color: #00d4ff; }
-        .chat-header img { width: 50px; height: 50px; border-radius: 50px; margin-top: 10px; border: 2px solid #00d4ff; object-fit: cover; }
+        .chat-header h1 { font-size: 1.5em; color: #00ff66; }
+        .estado { font-size: 0.8em; color: #00ff66; font-weight: bold; margin-top: 5px; }
+        .chat-header img { width: 50px; height: 50px; border-radius: 50px; margin-top: 10px; border: 2px solid #00ff66; object-fit: cover; }
         .chat-box {
             flex: 1;
             padding: 15px;
@@ -46,8 +47,8 @@
             gap: 10px;
         }
         .message { padding: 10px 15px; border-radius: 10px; max-width: 80%; line-height: 1.4; }
-        .user-msg { background: #00d4ff; color: #000; align-self: flex-end; font-weight: 500; }
-        .bot-msg { background: #22314d; color: #fff; align-self: flex-start; border-left: 3px solid #00d4ff; }
+        .user-msg { background: #00ff66; color: #000; align-self: flex-end; font-weight: 500; }
+        .bot-msg { background: #22314d; color: #fff; align-self: flex-start; border-left: 3px solid #00ff66; }
         .input-area { display: flex; padding: 10px; background: #1c2a45; gap: 10px; }
         input {
             flex: 1;
@@ -58,10 +59,10 @@
             color: white;
             outline: none;
         }
-        input:focus { border-color: #00d4ff; }
+        input:focus { border-color: #00ff66; }
         button {
             padding: 0 20px;
-            background: #00d4ff;
+            background: #00ff66;
             border: none;
             border-radius: 8px;
             color: black;
@@ -69,7 +70,7 @@
             cursor: pointer;
             transition: 0.2s;
         }
-        button:hover { background: #009ec2; }
+        button:hover { background: #00cc52; }
     </style>
 </head>
 <body>
@@ -77,11 +78,12 @@
 <div class="chat-container">
     <div class="chat-header">
         <h1>Nexsus21</h1>
+        <div class="estado" id="statusLabel">🟢 CONECTADO (Vía n8n)</div>
         <img src="https://images.ecestaticos.com/ad-CsJ33cti4Dw5WAPofxTVYV24=/0x424:2273x1701/1338x752/filters:fill(white):format(jpg)/f.elconfidencial.com%2Foriginal%2F700%2F6c4%2F3f5%2F7006c43f5ac22088236eda758ec8446a.jpg" alt="Nexsus Avatar">
     </div>
     
     <div class="chat-box" id="chatBox">
-        <div class="message bot-msg">¡Hola! Soy **Nexsus21**, tu Inteligencia Artificial personalizada. ¿Qué quieres que hagamos hoy?</div>
+        <div class="message bot-msg">¡Conexión exitosa! Soy Nexsus21. ¿De qué quieres hablar hoy?</div>
     </div>
 
     <div class="input-area">
@@ -91,24 +93,51 @@
 </div>
 
 <script>
+    // ⚠️ REEMPLAZA ESTE ENLACE POR TU URL DE WEBHOOK DE N8N CUANDO LA TENGAS
+    const N8N_WEBHOOK_URL = "https://tu-instancia.n8n.cloud/webhook/tu-identificador";
+
     function evaluarEnter(e) {
         if (e.key === 'Enter') enviarMensaje();
     }
 
-    function enviarMensaje() {
+    async function enviarMensaje() {
         let input = document.getElementById("userInput");
         let mensajeTexto = input.value.trim();
         if (mensajeTexto === "") return;
 
-        // Agregar mensaje del usuario
+        // Mostrar mensaje del usuario en pantalla
         agregarMensaje(mensajeTexto, 'user-msg');
         input.value = "";
 
-        // Respuesta simulada de la IA temporal (mientras conectamos tu API/Webhook)
-        setTimeout(() => {
-            let respuestaIA = procesarRespuestaLocal(mensajeTexto);
-            agregarMensaje(respuestaIA, 'bot-msg');
-        }, 800);
+        // Mostrar indicador de que la IA está "pensando..."
+        let indicadorPensando = document.createElement("div");
+        indicadorPensando.className = "message bot-msg";
+        indicadorPensando.innerText = "Nexsus21 está pensando...";
+        document.getElementById("chatBox").appendChild(indicadorPensando);
+
+        try {
+            // AQUÍ SE ENVÍA EL MENSAJE A N8N
+            let respuesta = await fetch(N8N_WEBHOOK_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ mensaje: mensajeTexto })
+            });
+
+            let datos = await respuesta.json();
+            
+            // Quitar el indicador de pensando
+            indicadorPensando.remove();
+
+            // Mostrar la respuesta real que mandó n8n (asumiendo que n8n devuelve { respuesta: "texto" })
+            agregarMensaje(datos.respuesta || "Mensaje recibido por n8n, pero no obtuve respuesta en texto.", 'bot-msg');
+
+        } catch (error) {
+            indicadorPensando.remove();
+            agregarMensaje("Error al conectar con n8n. Revisa si tu workflow está activo o la URL es correcta.", 'bot-msg');
+            console.error("Error:", error);
+        }
     }
 
     function agregarMensaje(texto, tipo) {
@@ -118,14 +147,6 @@
         div.innerText = texto;
         chatBox.appendChild(div);
         chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function procesarRespuestaLocal(msg) {
-        let texto = msg.toLowerCase();
-        if (texto.includes("hola")) return "¡Hola de nuevo! ¿Listo para programar?";
-        if (texto.includes("quien eres") || texto.includes("quién eres")) return "Soy Nexsus21, un bot inteligente en desarrollo.";
-        if (texto.includes("jugar")) return "¡Pronto tendré juegos integrados!";
-        return "Nexsus21 procesando... Entendido tu mensaje sobre: '" + msg + "'. Conéctame a n8n o una API para darte respuestas reales.";
     }
 </script>
 
