@@ -1,0 +1,1000 @@
+
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>INZLIXC RACING & "¡LLEVAME!" ULTIMATE 3D - EDICIÓN EXPANDIDA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        body {
+            margin: 0; padding: 0; overflow: hidden;
+            background-color: #020617;
+            font-family: 'Rajdhani', sans-serif;
+            color: #f8fafc;
+            touch-action: none;
+        }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .glass-panel {
+            background: rgba(10, 15, 30, 0.88);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
+        }
+        .neon-cyan { text-shadow: 0 0 12px rgba(34, 211, 238, 0.85), 0 0 28px rgba(34, 211, 238, 0.4); }
+        .neon-pink { text-shadow: 0 0 12px rgba(244, 63, 94, 0.85), 0 0 28px rgba(244, 63, 94, 0.4); }
+        .neon-amber { text-shadow: 0 0 12px rgba(251, 191, 36, 0.85), 0 0 28px rgba(251, 191, 36, 0.4); }
+        #speed-lines {
+            background: radial-gradient(circle, transparent 52%, rgba(6, 182, 212, 0.25) 92%, rgba(244, 63, 94, 0.42) 100%);
+            box-shadow: inset 0 0 90px rgba(6, 182, 212, 0.55);
+            transition: opacity 0.18s ease;
+        }
+        #rain-overlay {
+            background-image: linear-gradient(to bottom, rgba(186, 230, 253, 0.08) 0%, rgba(186, 230, 253, 0.02) 100%);
+            transition: opacity 0.4s ease;
+        }
+        .touch-btn {
+            background: rgba(15, 23, 42, 0.72);
+            border: 2px solid rgba(34, 211, 238, 0.45);
+            backdrop-filter: blur(6px);
+            transition: transform 0.08s, background-color 0.08s;
+        }
+        .touch-btn:active, .touch-btn.active {
+            background: rgba(34, 211, 238, 0.45);
+            transform: scale(0.92);
+            border-color: #22d3ee;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); }
+        ::-webkit-scrollbar-thumb { background: rgba(34, 211, 238, 0.5); border-radius: 999px; }
+    </style>
+</head>
+<body class="w-screen h-screen relative overflow-hidden">
+
+    <!-- Three.js Canvas Container -->
+    <div id="canvas-container" class="absolute inset-0 w-full h-full z-0"></div>
+
+    <!-- Visual Overlays -->
+    <div id="speed-lines" class="absolute inset-0 pointer-events-none opacity-0 z-10"></div>
+    <div id="rain-overlay" class="absolute inset-0 pointer-events-none opacity-0 z-10"></div>
+
+    <!-- Top Right UI Bar -->
+    <div class="absolute top-3 right-3 z-40 flex items-center gap-2">
+        <div class="glass-panel px-3.5 py-2 rounded-xl flex items-center gap-2 border-amber-400/50">
+            <span class="text-base">🪙</span>
+            <span id="global-coins" class="font-orbitron font-black text-amber-300 text-sm sm:text-base">350</span>
+        </div>
+        <button id="btn-camera-hud" onclick="cycleCamera()" title="Cambiar Cámara (C)" class="hidden glass-panel hover:bg-cyan-500/25 text-cyan-300 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-orbitron font-bold flex items-center gap-1.5 transition cursor-pointer">
+            <span>🎥</span> <span id="hud-cam-label">PERSECUCIÓN</span>
+        </button>
+        <button id="btn-mute" onclick="toggleMute()" title="Audio" class="glass-panel hover:bg-slate-800 text-white p-2.5 rounded-xl transition cursor-pointer">
+            <span id="mute-icon">🔊</span>
+        </button>
+        <button id="btn-pause" onclick="togglePause()" title="Pausar" class="hidden glass-panel hover:bg-slate-800 text-white p-2.5 rounded-xl transition cursor-pointer">
+            ⏸️
+        </button>
+    </div>
+
+    <!-- ==================== MAIN MENU ==================== -->
+    <div id="main-menu" class="absolute inset-0 z-30 flex flex-col justify-between p-4 sm:p-7 pointer-events-none">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pr-36 sm:pr-44">
+            <div>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-orbitron tracking-widest mb-1">
+                    <span>🚖 APP "¡LLEVAME!" VIP</span> • <span>🏎️ CABINA 3D</span> • <span>⚡ STUNT ARENA</span>
+                </div>
+                <h1 class="text-3xl sm:text-5xl font-orbitron font-black italic tracking-wider text-white neon-cyan">
+                    INZLIXC <span class="text-amber-400 neon-amber">"¡LLEVAME!"</span> <span class="text-xl sm:text-3xl text-cyan-400">ULTIMATE</span>
+                </h1>
+            </div>
+        </div>
+
+        <!-- Vehicle Card -->
+        <div class="pointer-events-auto self-start glass-panel rounded-2xl p-3.5 sm:p-4 max-w-xs space-y-2 border-cyan-400/40">
+            <div class="flex items-center justify-between">
+                <span class="text-[11px] font-orbitron text-cyan-400 tracking-wider">VEHÍCULO</span>
+                <span id="menu-car-class" class="text-[10px] font-orbitron px-2 py-0.5 rounded bg-amber-500/30 text-amber-300 border border-amber-500/40">TAXIS / GT</span>
+            </div>
+            <div id="menu-car-name" class="text-xl sm:text-2xl font-orbitron font-black text-white">CITY TAXI</div>
+            <button onclick="openGarage()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:brightness-110 text-slate-950 font-orbitron font-black text-xs sm:text-sm tracking-wider shadow-lg shadow-amber-500/25 transition transform active:scale-95 cursor-pointer flex items-center justify-center gap-2">
+                <span>🏪 TIENDA & TALLER 3D</span>
+            </button>
+        </div>
+
+        <!-- Bottom Panel: Game Mode, Sub-mode, Weather, Action -->
+        <div class="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-end pointer-events-auto">
+            <div class="lg:col-span-7 glass-panel rounded-2xl p-4 space-y-3">
+                <div>
+                    <label class="block text-[11px] font-orbitron text-amber-300 tracking-wider mb-1.5">SELECCIONAR MODO DE JUEGO</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setGameCategory('uber')" id="cat-uber" class="cat-btn py-2.5 px-3 rounded-xl font-bold text-xs bg-amber-500/30 border border-amber-400 text-white transition cursor-pointer flex items-center justify-center gap-1.5">
+                            <span>📱</span> <span>"¡LLEVAME!" APP</span>
+                        </button>
+                        <button onclick="setGameCategory('pool')" id="cat-pool" class="cat-btn py-2.5 px-3 rounded-xl font-bold text-xs bg-slate-800/75 border border-slate-700 text-slate-300 hover:text-white transition cursor-pointer flex items-center justify-center gap-1.5">
+                            <span>👥</span> <span>POOL / VIP</span>
+                        </button>
+                        <button onclick="setGameCategory('stunt')" id="cat-stunt" class="cat-btn py-2.5 px-3 rounded-xl font-bold text-xs bg-slate-800/75 border border-slate-700 text-slate-300 hover:text-white transition cursor-pointer flex items-center justify-center gap-1.5">
+                            <span>🎢</span> <span>STUNT PARK</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-orbitron text-cyan-300 tracking-wider mb-1.5">CLIMA Y AMBIENTE</label>
+                    <div class="grid grid-cols-4 gap-1.5">
+                        <button onclick="setEnvironment('night')" id="env-night" class="env-btn py-1.5 px-2 rounded-xl font-bold text-xs bg-cyan-500/30 border border-cyan-400 text-white transition cursor-pointer">🌙 NOCHE</button>
+                        <button onclick="setEnvironment('sunset')" id="env-sunset" class="env-btn py-1.5 px-2 rounded-xl font-bold text-xs bg-slate-800/75 border border-slate-700 text-slate-300 hover:text-white transition cursor-pointer">🌅 TARDE</button>
+                        <button onclick="setEnvironment('day')" id="env-day" class="env-btn py-1.5 px-2 rounded-xl font-bold text-xs bg-slate-800/75 border border-slate-700 text-slate-300 hover:text-white transition cursor-pointer">☀️ DÍA</button>
+                        <button onclick="setEnvironment('storm')" id="env-storm" class="env-btn py-1.5 px-2 rounded-xl font-bold text-xs bg-slate-800/75 border border-slate-700 text-slate-300 hover:text-white transition cursor-pointer">⛈️ LLUVIA</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="lg:col-span-5 glass-panel rounded-2xl p-4 flex flex-col justify-between space-y-3">
+                <div class="flex justify-between items-center text-xs text-slate-300 bg-slate-900/75 px-3 py-2 rounded-xl border border-slate-800">
+                    <span><strong class="text-cyan-400">[C]</strong> Cambiar Cámara (Cabina 3D)</span>
+                    <span><strong class="text-amber-400">[ESPACIO]</strong> Nitro</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2.5">
+                    <button onclick="openGarage()" class="py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-amber-400/50 text-amber-300 font-orbitron font-bold text-xs sm:text-sm transition cursor-pointer">
+                        🔧 GARAJE & TUNING
+                    </button>
+                    <button onclick="startGame()" class="py-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:brightness-110 text-white font-orbitron font-black text-sm sm:text-base tracking-wider shadow-lg shadow-amber-500/30 transition transform active:scale-95 cursor-pointer">
+                        🚖 CONECTARSE
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== GARAGE & 3D SHOWROOM ==================== -->
+    <div id="garage-ui" class="hidden absolute inset-0 z-30 flex flex-col justify-between p-4 sm:p-6 pointer-events-none">
+        <div class="flex items-center justify-between pr-36 sm:pr-44 pointer-events-auto">
+            <button onclick="closeGarage()" class="glass-panel hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl font-orbitron font-bold text-xs sm:text-sm flex items-center gap-2 transition cursor-pointer">
+                <span>◀ VOLVER AL MENÚ</span>
+            </button>
+            <div class="hidden sm:block text-center">
+                <h2 class="text-2xl font-orbitron font-black text-amber-400 tracking-wider">CONCESIONARIO & TALLER DE MEJORAS</h2>
+            </div>
+        </div>
+
+        <div class="pointer-events-auto self-end glass-panel rounded-2xl p-4 w-full sm:w-80 space-y-3.5 my-auto max-h-[62vh] overflow-y-auto">
+            <div class="border-b border-slate-700/80 pb-2">
+                <div class="flex justify-between items-center">
+                    <span id="shop-car-name" class="font-orbitron font-black text-lg text-white">CITY TAXI</span>
+                    <span id="shop-car-tag" class="text-[10px] font-orbitron px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">SERVICIO</span>
+                </div>
+                <p id="shop-car-desc" class="text-xs text-slate-300 mt-0.5">Ideal para el servicio de pasajeros "¡Llevame!".</p>
+            </div>
+
+            <div class="space-y-2 pt-1 border-t border-slate-700/80">
+                <div class="text-[11px] font-orbitron text-cyan-300 tracking-wider">COLOR DE CARROCERÍA RGB</div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="setCarColor('#eab308')" class="w-7 h-7 rounded-full bg-amber-400 border-2 border-white/60 cursor-pointer" title="Amarillo Taxi"></button>
+                    <button onclick="setCarColor('#f43f5e')" class="w-7 h-7 rounded-full bg-rose-500 border-2 border-white/60 cursor-pointer"></button>
+                    <button onclick="setCarColor('#06b6d4')" class="w-7 h-7 rounded-full bg-cyan-500 border-2 border-white/60 cursor-pointer"></button>
+                    <button onclick="setCarColor('#10b981')" class="w-7 h-7 rounded-full bg-emerald-500 border-2 border-white/60 cursor-pointer"></button>
+                    <button onclick="setCarColor('#8b5cf6')" class="w-7 h-7 rounded-full bg-violet-500 border-2 border-white/60 cursor-pointer"></button>
+                    <button onclick="setCarColor('#111827')" class="w-7 h-7 rounded-full bg-slate-900 border-2 border-white/60 cursor-pointer"></button>
+                </div>
+            </div>
+
+            <button id="btn-car-action" onclick="handleCarAction()" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-orbitron font-black text-sm tracking-wider transition cursor-pointer">
+                EQUIPADO
+            </button>
+        </div>
+
+        <div class="pointer-events-auto w-full max-w-4xl mx-auto">
+            <div id="car-carousel" class="grid grid-cols-4 gap-2"></div>
+        </div>
+    </div>
+
+    <!-- ==================== "¡LLEVAME!" MOBILE APP UI ==================== -->
+    <div id="llevame-app-banner" class="hidden absolute top-4 left-4 z-20 pointer-events-auto glass-panel p-3.5 rounded-2xl w-72 space-y-2 border-amber-400/50 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-700 pb-2">
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <span id="app-title-badge" class="font-orbitron font-black text-amber-300 text-sm">¡LLEVAME! VIP</span>
+            </div>
+            <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-orbitron">⭐ 4.98</span>
+        </div>
+        <div id="llevame-status-box" class="text-xs space-y-1.5">
+            <div class="text-slate-300 font-bold" id="llevame-msg">Buscando solicitud VIP...</div>
+            <div id="llevame-details" class="hidden bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 space-y-1">
+                <div class="flex justify-between"><span class="text-slate-400">Pasajero:</span><span id="p-name" class="text-white font-bold">Victoria St.</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">Destino:</span><span id="p-dest" class="text-amber-300 font-bold">Penthouse Sky</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">Tarifa VIP:</span><span id="p-fare" class="text-emerald-400 font-bold">🪙 250</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== IN-GAME HUD ==================== -->
+    <div id="game-hud" class="hidden absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-3 sm:p-5">
+        <div class="flex flex-wrap items-start justify-between gap-2 pr-44 sm:pr-56">
+            <div class="glass-panel px-3.5 py-2 rounded-2xl flex items-center gap-3">
+                <div>
+                    <div id="hud-score-label" class="text-[10px] font-orbitron text-amber-400 tracking-widest">INGRESOS TOTALES</div>
+                    <div id="hud-score" class="text-lg sm:text-2xl font-orbitron font-black text-white">🪙 0</div>
+                </div>
+            </div>
+
+            <div class="glass-panel px-3.5 py-2 rounded-2xl flex items-center gap-3">
+                <div>
+                    <div class="text-[10px] font-orbitron text-rose-400 tracking-widest">CRONÓMETRO</div>
+                    <div id="hud-time-val" class="text-lg sm:text-2xl font-orbitron font-bold text-white">50.0s</div>
+                </div>
+                <div class="h-7 w-px bg-slate-700"></div>
+                <div class="w-20 sm:w-28">
+                    <div class="flex justify-between text-[10px] font-orbitron mb-1">
+                        <span class="text-emerald-400">ARMADURA</span>
+                        <span id="hud-hp-text" class="text-white">100%</span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <div id="hud-hp-bar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-150" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Central Banners -->
+        <div class="self-center text-center space-y-1">
+            <div id="hud-banner" class="opacity-0 transition-opacity duration-200">
+                <div id="hud-banner-text" class="text-2xl sm:text-4xl font-orbitron font-black text-amber-300 neon-amber italic"></div>
+            </div>
+        </div>
+
+        <!-- Bottom Speed & Nitro Bar -->
+        <div id="hud-bottom-bar" class="flex items-end justify-between w-full mb-20 sm:mb-0 transition-opacity duration-300">
+            <div class="glass-panel p-3 rounded-2xl w-40 sm:w-60">
+                <div class="flex justify-between items-center text-xs font-orbitron mb-1">
+                    <span class="text-cyan-300 font-bold">⚡ NITRO</span>
+                    <span id="hud-nitro-text" class="text-white font-bold">100%</span>
+                </div>
+                <div class="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-cyan-500/40 p-0.5">
+                    <div id="hud-nitro-bar" class="h-full bg-gradient-to-r from-blue-500 via-cyan-400 to-white rounded-full transition-all duration-75" style="width: 100%"></div>
+                </div>
+            </div>
+
+            <div class="glass-panel px-4 py-2.5 rounded-2xl flex items-center gap-3">
+                <div class="text-right">
+                    <div id="hud-speed" class="text-3xl sm:text-5xl font-orbitron font-black text-white leading-none">0</div>
+                    <div class="text-[11px] font-orbitron text-cyan-400 font-bold tracking-widest">KM/H</div>
+                </div>
+                <div class="h-10 w-px bg-slate-700"></div>
+                <div class="text-center">
+                    <div class="text-[10px] font-orbitron text-slate-400">MARCHA</div>
+                    <div id="hud-gear" class="text-2xl font-orbitron font-black text-rose-400">D</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Touch Controls -->
+    <div id="mobile-controls" class="hidden absolute inset-x-0 bottom-3 z-30 px-3 flex justify-between items-end pointer-events-none sm:hidden">
+        <div class="flex gap-2 pointer-events-auto">
+            <button id="t-left" class="touch-btn w-15 h-15 p-4 rounded-2xl flex items-center justify-center text-xl text-cyan-300 font-bold">◀</button>
+            <button id="t-right" class="touch-btn w-15 h-15 p-4 rounded-2xl flex items-center justify-center text-xl text-cyan-300 font-bold">▶</button>
+        </div>
+        <div class="flex gap-1.5 pointer-events-auto items-end">
+            <button id="t-nitro" class="touch-btn w-13 h-14 px-2.5 rounded-2xl flex flex-col items-center justify-center text-[10px] font-orbitron font-bold text-amber-300 border-amber-400/60"><span>⚡</span><span>NITRO</span></button>
+            <button id="t-brake" class="touch-btn w-13 h-16 px-2.5 rounded-2xl flex flex-col items-center justify-center text-[10px] font-orbitron font-bold text-rose-400 border-rose-500/60"><span>🛑</span><span>FRENO</span></button>
+            <button id="t-gas" class="touch-btn w-15 h-20 px-3 rounded-2xl flex flex-col items-center justify-center text-xs font-orbitron font-bold text-emerald-300 border-emerald-400/60"><span>▲</span><span>GAS</span></button>
+        </div>
+    </div>
+
+    <!-- Pause & Game Over Modals -->
+    <div id="pause-modal" class="hidden absolute inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel max-w-sm w-full rounded-3xl p-6 text-center space-y-4">
+            <h2 class="text-3xl font-orbitron font-black text-cyan-400">PAUSA</h2>
+            <div class="space-y-2.5">
+                <button onclick="togglePause()" class="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-orbitron font-black transition cursor-pointer">CONTINUAR</button>
+                <button onclick="cycleCamera()" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-orbitron font-bold transition cursor-pointer">CAMBIAR CÁMARA (C)</button>
+                <button onclick="returnToMenu()" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-400 font-orbitron font-bold transition cursor-pointer">SALIR AL MENÚ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameover-modal" class="hidden absolute inset-0 z-40 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel max-w-md w-full rounded-3xl p-6 text-center space-y-4 border-amber-500/40">
+            <div id="go-tag" class="inline-block px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-orbitron">RESUMEN DEL TURNO</div>
+            <h2 id="go-title" class="text-2xl sm:text-3xl font-orbitron font-black text-white neon-amber">¡TURNO FINALIZADO!</h2>
+            <div class="bg-slate-900/85 rounded-2xl p-4 space-y-2 border border-slate-800 text-left text-sm">
+                <div class="flex justify-between"><span class="text-slate-400">Ingresos Totales:</span><span id="go-stat1" class="font-orbitron font-black text-amber-300 text-base">🪙 0</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">Calificación Promedio:</span><span id="go-stat2" class="font-orbitron font-bold text-emerald-400">⭐ 4.98</span></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-1">
+                <button onclick="returnToMenu()" class="py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-orbitron font-bold text-xs transition cursor-pointer">MENÚ</button>
+                <button onclick="startGame()" class="py-3 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:brightness-110 text-white font-orbitron font-black text-xs shadow-lg transition cursor-pointer">NUEVO TURNO</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // 1. CAR CATALOG & SAVED DATA
+        // ============================================================================
+        const CAR_CATALOG = [
+            { id: 'taxi_std', name: 'CITY TAXI', tag: 'SERVICIO', price: 0, desc: 'Clásico sedán amarillo equipado con taxímetro.', baseSpeed: 85, baseAccel: 48, bodyType: 'taxi' },
+            { id: 'apex', name: 'APEX GT', tag: 'DEPORTIVO', price: 200, desc: 'Deportivo japonés equilibrado y veloz.', baseSpeed: 95, baseAccel: 54, bodyType: 'gt' },
+            { id: 'vipera', name: 'VIPERA V8', tag: 'MUSCLE', price: 500, desc: 'Motor V8 sobrealimentado con escape libre.', baseSpeed: 104, baseAccel: 62, bodyType: 'muscle' },
+            { id: 'titan', name: 'TITAN HYPER', tag: 'HIPERAUTO', price: 1200, desc: 'Velocidad pura hiperdeportiva eléctrica.', baseSpeed: 120, baseAccel: 75, bodyType: 'hyper' }
+        ];
+
+        let SAVE_DATA = {
+            coins: 450,
+            ownedCars: ['taxi_std'],
+            selectedCar: 'taxi_std',
+            carColor: '#eab308'
+        };
+
+        function loadSaveData() {
+            try {
+                const raw = localStorage.getItem('inzlixc_llevame_ultimate_save');
+                if (raw) SAVE_DATA = { ...SAVE_DATA, ...JSON.parse(raw) };
+            } catch (e) {}
+            updateCoinDisplays();
+        }
+
+        function persistSaveData() {
+            try { localStorage.setItem('inzlixc_llevame_ultimate_save', JSON.stringify(SAVE_DATA)); } catch (e) {}
+            updateCoinDisplays();
+        }
+
+        function updateCoinDisplays() {
+            document.getElementById('global-coins').innerText = Math.floor(SAVE_DATA.coins).toLocaleString();
+        }
+
+        function getEquippedStats() {
+            const spec = CAR_CATALOG.find(c => c.id === SAVE_DATA.selectedCar) || CAR_CATALOG[0];
+            return { spec, maxSpeed: spec.baseSpeed, accel: spec.baseAccel, handling: 32 };
+        }
+
+        // ============================================================================
+        // 2. AUDIO SYNTHESIZER
+        // ============================================================================
+        class SoundSystem {
+            constructor() { this.ctx = null; this.muted = false; this.initialized = false; }
+            init() {
+                if (!this.ctx) {
+                    const AC = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AC();
+                }
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                if (!this.initialized) { this.setupLoops(); this.initialized = true; }
+            }
+            setupLoops() {
+                const now = this.ctx.currentTime;
+                this.engOsc1 = this.ctx.createOscillator();
+                this.engOsc2 = this.ctx.createOscillator();
+                this.engOsc1.type = 'sawtooth'; this.engOsc2.type = 'triangle';
+                this.engFilter = this.ctx.createBiquadFilter(); this.engFilter.type = 'lowpass';
+                this.engGain = this.ctx.createGain(); this.engGain.gain.setValueAtTime(0, now);
+                this.engOsc1.connect(this.engFilter); this.engOsc2.connect(this.engFilter);
+                this.engFilter.connect(this.engGain); this.engGain.connect(this.ctx.destination);
+                this.engOsc1.start(now); this.engOsc2.start(now);
+            }
+            update(speedRatio, isNitro, activeGame) {
+                if (!this.ctx || !this.initialized) return;
+                const now = this.ctx.currentTime;
+                if (this.muted || !activeGame) {
+                    this.engGain.gain.setTargetAtTime(0, now, 0.08);
+                    return;
+                }
+                const baseFreq = 50 + speedRatio * 130 + (isNitro ? 60 : 0);
+                this.engOsc1.frequency.setTargetAtTime(baseFreq, now, 0.04);
+                this.engOsc2.frequency.setTargetAtTime(baseFreq * 1.98, now, 0.04);
+                this.engFilter.frequency.setTargetAtTime(220 + speedRatio * 900, now, 0.06);
+                this.engGain.gain.setTargetAtTime(0.08 + speedRatio * 0.07, now, 0.08);
+            }
+            playTone(f1, f2, dur, type='sine', vol=0.2) {
+                if (this.muted || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator(); const g = this.ctx.createGain();
+                osc.type = type; osc.frequency.setValueAtTime(f1, now); osc.frequency.exponentialRampToValueAtTime(f2, now + dur);
+                g.gain.setValueAtTime(vol, now); g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+                osc.connect(g); g.connect(this.ctx.destination); osc.start(now); osc.stop(now + dur + 0.02);
+            }
+            playCoin() { this.playTone(880, 1400, 0.22, 'sine', 0.18); }
+            playPowerup() { this.playTone(520, 1600, 0.35, 'triangle', 0.22); }
+        }
+        const audio = new SoundSystem();
+        function toggleMute() { audio.init(); audio.muted = !audio.muted; document.getElementById('mute-icon').innerText = audio.muted ? '🔇' : '🔊'; }
+
+        // ============================================================================
+        // 3. THREE.JS SCENE, ROAD & OBSTACLES
+        // ============================================================================
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x030712, 0.0045);
+
+        const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.08, 600);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const hemiLight = new THREE.HemisphereLight(0x38bdf8, 0x0f172a, 0.85);
+        scene.add(hemiLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.95);
+        dirLight.position.set(30, 70, -40);
+        scene.add(dirLight);
+
+        // Starfield
+        const starGeo = new THREE.BufferGeometry();
+        const starPos = new Float32Array(600 * 3);
+        for (let i = 0; i < starPos.length; i += 3) {
+            starPos[i] = (Math.random() - 0.5) * 700;
+            starPos[i + 1] = Math.random() * 200 + 30;
+            starPos[i + 2] = -Math.random() * 500 - 50;
+        }
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        const starField = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 1.2, fog: false }));
+        scene.add(starField);
+
+        // Rain
+        const rainCount = 1200;
+        const rainGeo = new THREE.BufferGeometry();
+        const rainPositions = new Float32Array(rainCount * 3);
+        for (let i = 0; i < rainCount * 3; i += 3) {
+            rainPositions[i] = (Math.random() - 0.5) * 90;
+            rainPositions[i + 1] = Math.random() * 50;
+            rainPositions[i + 2] = (Math.random() - 0.5) * 100;
+        }
+        rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
+        const rainSystem = new THREE.Points(rainGeo, new THREE.PointsMaterial({ color: 0xbae6fd, size: 0.25, transparent: true, opacity: 0.8 }));
+        rainSystem.visible = false;
+        scene.add(rainSystem);
+
+        // Road Segments
+        const ROAD_WIDTH = 26;
+        const SEG_LEN = 12;
+        const TOTAL_SEGS = 70;
+        const roadSegments = [];
+
+        const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x050914, roughness: 0.9 });
+        const lineMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+
+        function initRoad() {
+            const roadGeo = new THREE.PlaneGeometry(ROAD_WIDTH, SEG_LEN);
+            roadGeo.rotateX(-Math.PI / 2);
+            const groundGeo = new THREE.PlaneGeometry(350, SEG_LEN);
+            groundGeo.rotateX(-Math.PI / 2);
+            const lineGeo = new THREE.PlaneGeometry(0.4, SEG_LEN);
+            lineGeo.rotateX(-Math.PI / 2);
+
+            for (let i = 0; i < TOTAL_SEGS; i++) {
+                const g = new THREE.Group();
+                const road = new THREE.Mesh(roadGeo, asphaltMat);
+                road.position.y = 0.02;
+                g.add(road);
+
+                const ground = new THREE.Mesh(groundGeo, groundMat);
+                ground.position.y = -0.01;
+                g.add(ground);
+
+                const l1 = new THREE.Mesh(lineGeo, lineMat);
+                l1.position.set(-4.5, 0.03, 0);
+                g.add(l1);
+                const l2 = new THREE.Mesh(lineGeo, lineMat);
+                l2.position.set(4.5, 0.03, 0);
+                g.add(l2);
+
+                scene.add(g);
+                roadSegments.push({ mesh: g, index: i });
+            }
+        }
+        initRoad();
+
+        // Stunt Ramp Arena Group
+        const stuntGroup = new THREE.Group();
+        stuntGroup.visible = false;
+        scene.add(stuntGroup);
+        for (let i = 0; i < 6; i++) {
+            const ramp = new THREE.Mesh(
+                new THREE.BoxGeometry(6, 1.2, 14),
+                new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3 })
+            );
+            ramp.position.set((i % 2 === 0 ? -1 : 1) * 7, 0.6, -i * 180 - 100);
+            ramp.rotation.x = -0.35;
+            stuntGroup.add(ramp);
+        }
+
+        // Showroom Group
+        const showroomGroup = new THREE.Group();
+        showroomGroup.visible = false;
+        scene.add(showroomGroup);
+        const platformMesh = new THREE.Mesh(
+            new THREE.CylinderGeometry(5.4, 5.8, 0.35, 36),
+            new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.85, roughness: 0.15 })
+        );
+        platformMesh.position.y = 0.15;
+        showroomGroup.add(platformMesh);
+
+        // ============================================================================
+        // 4. PLAYER VEHICLE & 1ST PERSON COCKPIT
+        // ============================================================================
+        const playerCarGroup = new THREE.Group();
+        scene.add(playerCarGroup);
+        const carBodyGroup = new THREE.Group();
+        playerCarGroup.add(carBodyGroup);
+        const exteriorGroup = new THREE.Group();
+        carBodyGroup.add(exteriorGroup);
+        const cockpitGroup = new THREE.Group();
+        carBodyGroup.add(cockpitGroup);
+
+        const carPaintMat = new THREE.MeshStandardMaterial({ color: SAVE_DATA.carColor, metalness: 0.72, roughness: 0.2 });
+        const darkLeatherMat = new THREE.MeshStandardMaterial({ color: 0x0b0f19, roughness: 0.85 });
+
+        const dashCanvas = document.createElement('canvas');
+        dashCanvas.width = 512; dashCanvas.height = 256;
+        const dashCtx = dashCanvas.getContext('2d');
+        const dashTexture = new THREE.CanvasTexture(dashCanvas);
+
+        function buildCarModel(bodyType = 'taxi') {
+            while (exteriorGroup.children.length) exteriorGroup.remove(exteriorGroup.children[0]);
+            while (cockpitGroup.children.length) cockpitGroup.remove(cockpitGroup.children[0]);
+
+            const isTaxi = (bodyType === 'taxi');
+            const paintColor = isTaxi ? '#eab308' : SAVE_DATA.carColor;
+            carPaintMat.color.set(paintColor);
+
+            const chassis = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.65, 4.6), carPaintMat);
+            chassis.position.y = 0.62;
+            exteriorGroup.add(chassis);
+
+            const roof = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.5, 2.0), isTaxi ? carPaintMat : new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.1, transparent: true, opacity: 0.85 }));
+            roof.position.set(0, 1.25, 0.1);
+            exteriorGroup.add(roof);
+
+            if (isTaxi) {
+                const taxiSign = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.22, 0.35), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+                taxiSign.position.set(0, 1.58, 0.1);
+                exteriorGroup.add(taxiSign);
+            }
+
+            // Wheels
+            const tireGeo = new THREE.CylinderGeometry(0.44, 0.44, 0.35, 16);
+            tireGeo.rotateZ(Math.PI / 2);
+            const rimGeo = new THREE.CylinderGeometry(0.27, 0.27, 0.37, 10);
+            rimGeo.rotateZ(Math.PI / 2);
+            const tireMat = new THREE.MeshStandardMaterial({ color: 0x090d16 });
+            const rimMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.8 });
+
+            [
+                { x: -1.12, y: 0.44, z: -1.45 }, { x: 1.12, y: 0.44, z: -1.45 },
+                { x: -1.12, y: 0.44, z: 1.45 }, { x: 1.12, y: 0.44, z: 1.45 }
+            ].forEach(p => {
+                const piv = new THREE.Group();
+                piv.position.set(p.x, p.y, p.z);
+                const w = new THREE.Group();
+                w.add(new THREE.Mesh(tireGeo, tireMat));
+                w.add(new THREE.Mesh(rimGeo, rimMat));
+                piv.add(w);
+                exteriorGroup.add(piv);
+            });
+
+            // 3D Cockpit
+            const dashBase = new THREE.Mesh(new THREE.BoxGeometry(1.78, 0.34, 0.65), darkLeatherMat);
+            dashBase.position.set(0, 0.96, -0.78);
+            cockpitGroup.add(dashBase);
+
+            const clusterScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.54, 0.24), new THREE.MeshBasicMaterial({ map: dashTexture }));
+            clusterScreen.position.set(-0.36, 1.11, -0.545); clusterScreen.rotation.x = -0.18;
+            cockpitGroup.add(clusterScreen);
+
+            const steeringWheelPivot = new THREE.Group();
+            steeringWheelPivot.position.set(-0.36, 1.03, -0.42); steeringWheelPivot.rotation.x = -0.32;
+            cockpitGroup.add(steeringWheelPivot);
+            const wheelRim = new THREE.Mesh(new THREE.TorusGeometry(0.175, 0.024, 10, 24), darkLeatherMat);
+            steeringWheelPivot.add(wheelRim);
+        }
+
+        function updateCockpitTexture(kmh, gear) {
+            if (STATE.cameraIndex !== 1) return;
+            const ctx = dashCtx;
+            ctx.fillStyle = '#030712'; ctx.fillRect(0, 0, 512, 256);
+            ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 6; ctx.strokeRect(6, 6, 500, 244);
+            ctx.fillStyle = '#ffffff'; ctx.font = '900 105px Orbitron, sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText(Math.floor(kmh).toString(), 215, 165);
+            ctx.fillStyle = '#f43f5e'; ctx.font = '900 76px Orbitron, sans-serif'; ctx.fillText(gear, 420, 155);
+            dashTexture.needsUpdate = true;
+        }
+
+        // ============================================================================
+        // 5. GAME STATE & MODES (UBER APP, POOL, STUNT)
+        // ============================================================================
+        const STATE = {
+            status: 'MENU', // MENU, GARAGE, PLAYING, PAUSED, GAMEOVER
+            category: 'uber', // uber, pool, stunt
+            cameraIndex: 0,
+            cameraNames: ['PERSECUCIÓN', 'CABINA 3D (1ª PERSONA)', 'CAPÓ', 'AÉREA'],
+            runCoins: 0,
+            distance: 0,
+            timeLeft: 60,
+            garageCarId: 'taxi_std',
+            orbitAngle: 0.5,
+            // App Ride State
+            appState: 'searching',
+            passengerName: 'Victoria Sterling',
+            passengerDest: 'Penthouse Sky Tower',
+            passengerFare: 220,
+            passengerZ: -160,
+            destZ: -500
+        };
+
+        const PLAYER = {
+            z: 0, laneOffset: 0, lateralVel: 0, speed: 0,
+            nitro: 100, isNitro: false
+        };
+
+        const INPUT = { left: false, right: false, up: false, down: false, nitro: false };
+
+        const passengerNames = ['Victoria Sterling', 'Sr. Montgomery', 'Dafne Vance', 'Dr. Aris Thorne', 'CEO Kaelen'];
+        const destinations = ['Penthouse Sky Tower', 'Hotel Grand Casino', 'Distrito Financiero', 'Mansión de la Colina', 'Bunker Ciber-Tech'];
+
+        function assignNewPassenger() {
+            STATE.passengerName = passengerNames[Math.floor(Math.random() * passengerNames.length)];
+            STATE.passengerDest = destinations[Math.floor(Math.random() * destinations.length)];
+            STATE.passengerFare = STATE.category === 'pool' ? 350 : 200 + Math.floor(Math.random() * 180);
+            STATE.passengerZ = PLAYER.z - 160 - Math.random() * 90;
+            STATE.destZ = STATE.passengerZ - 350 - Math.random() * 250;
+            STATE.appState = 'pickup';
+            STATE.timeLeft = STATE.category === 'pool' ? 75 : 60;
+
+            document.getElementById('llevame-msg').innerText = STATE.category === 'pool' ? '¡Solicitud Pool (2 Pasajeros)! Múltiple ruta.' : '¡Solicitud VIP entrante!';
+            document.getElementById('p-name').innerText = STATE.passengerName;
+            document.getElementById('p-dest').innerText = STATE.passengerDest;
+            document.getElementById('p-fare').innerText = '🪙 ' + STATE.passengerFare;
+            document.getElementById('llevame-details').classList.remove('hidden');
+        }
+
+        // ============================================================================
+        // 6. MENUS & GARAGE MANAGEMENT
+        // ============================================================================
+        function setGameCategory(cat) {
+            STATE.category = cat;
+            ['uber', 'pool', 'stunt'].forEach(c => {
+                const btn = document.getElementById('cat-' + c);
+                if (c === cat) {
+                    btn.className = 'cat-btn py-2.5 px-3 rounded-xl font-bold text-xs bg-amber-500/30 border border-amber-400 text-white transition cursor-pointer flex items-center justify-center gap-1.5';
+                } else {
+                    btn.className = 'cat-btn py-2.5 px-3 rounded-xl font-bold text-xs bg-slate-800/75 border border-slate-700 text-slate-300 hover:text-white transition cursor-pointer flex items-center justify-center gap-1.5';
+                }
+            });
+        }
+
+        function setEnvironment(env) {
+            document.querySelectorAll('.env-btn').forEach(b => b.className = 'env-btn py-1.5 px-2 rounded-xl font-bold text-xs bg-slate-800/75 border border-slate-700 text-slate-300 hover:text-white transition cursor-pointer');
+            document.getElementById('env-' + env).className = 'env-btn py-1.5 px-2 rounded-xl font-bold text-xs bg-cyan-500/30 border border-cyan-400 text-white transition cursor-pointer';
+            rainSystem.visible = (env === 'storm');
+            document.getElementById('rain-overlay').style.opacity = (env === 'storm') ? '1' : '0';
+        }
+
+        function openGarage() {
+            STATE.status = 'GARAGE';
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('garage-ui').classList.remove('hidden');
+            roadSegments.forEach(s => s.mesh.visible = false);
+            stuntGroup.visible = false;
+            showroomGroup.visible = true;
+            playerCarGroup.position.set(0, 0.32, 0);
+            renderGarageUI();
+        }
+
+        function closeGarage() {
+            STATE.status = 'MENU';
+            document.getElementById('garage-ui').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+            const eq = getEquippedStats();
+            buildCarModel(eq.spec.bodyType);
+            roadSegments.forEach(s => s.mesh.visible = true);
+            showroomGroup.visible = false;
+        }
+
+        function renderGarageUI() {
+            const spec = CAR_CATALOG.find(c => c.id === STATE.garageCarId) || CAR_CATALOG[0];
+            document.getElementById('shop-car-name').innerText = spec.name;
+            document.getElementById('shop-car-tag').innerText = spec.tag;
+            document.getElementById('shop-car-desc').innerText = spec.desc;
+
+            const carousel = document.getElementById('car-carousel');
+            carousel.innerHTML = CAR_CATALOG.map(c => `
+                <button onclick="STATE.garageCarId='${c.id}'; buildCarModel('${c.bodyType}'); renderGarageUI();" class="glass-panel p-2 rounded-xl text-center transition cursor-pointer ${c.id === STATE.garageCarId ? 'border-amber-400 ring-2 ring-amber-400/50' : 'opacity-75'}">
+                    <div class="font-orbitron font-bold text-[10px] text-white truncate">${c.name}</div>
+                    <div class="text-[10px] text-amber-300">${SAVE_DATA.ownedCars.includes(c.id) ? 'PROPIO' : '🪙 ' + c.price}</div>
+                </button>
+            `).join('');
+
+            const isOwned = SAVE_DATA.ownedCars.includes(spec.id);
+            const isEq = SAVE_DATA.selectedCar === spec.id;
+            const actionBtn = document.getElementById('btn-car-action');
+            if (isEq) {
+                actionBtn.innerText = '✓ EQUIPADO';
+                actionBtn.className = 'w-full py-3 rounded-xl bg-slate-800 text-amber-300 font-orbitron font-bold text-sm';
+            } else if (isOwned) {
+                actionBtn.innerText = 'EQUIPAR';
+                actionBtn.className = 'w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-orbitron font-bold text-sm cursor-pointer';
+                actionBtn.onclick = () => { SAVE_DATA.selectedCar = spec.id; persistSaveData(); renderGarageUI(); };
+            } else {
+                actionBtn.innerText = `COMPRAR (🪙 ${spec.price})`;
+                actionBtn.className = 'w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-orbitron font-bold text-sm cursor-pointer';
+                actionBtn.onclick = () => {
+                    if (SAVE_DATA.coins >= spec.price) {
+                        SAVE_DATA.coins -= spec.price;
+                        SAVE_DATA.ownedCars.push(spec.id);
+                        SAVE_DATA.selectedCar = spec.id;
+                        persistSaveData();
+                        renderGarageUI();
+                    }
+                };
+            }
+        }
+
+        function setCarColor(hex) {
+            SAVE_DATA.carColor = hex;
+            carPaintMat.color.set(hex);
+            persistSaveData();
+        }
+
+        // ============================================================================
+        // 7. GAMEPLAY & CAMERAS
+        // ============================================================================
+        function cycleCamera() {
+            STATE.cameraIndex = (STATE.cameraIndex + 1) % STATE.cameraNames.length;
+            document.getElementById('hud-cam-label').innerText = STATE.cameraNames[STATE.cameraIndex];
+            document.getElementById('hud-bottom-bar').style.opacity = STATE.cameraIndex === 1 ? '0.35' : '1';
+        }
+
+        function startGame() {
+            audio.init();
+            const eq = getEquippedStats();
+            buildCarModel(eq.spec.bodyType);
+            roadSegments.forEach(s => s.mesh.visible = true);
+            stuntGroup.visible = (STATE.category === 'stunt');
+            showroomGroup.visible = false;
+
+            STATE.status = 'PLAYING';
+            STATE.runCoins = 0; STATE.distance = 0;
+            PLAYER.z = 0; PLAYER.laneOffset = 0; PLAYER.speed = 28; PLAYER.nitro = 100;
+
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('garage-ui').classList.add('hidden');
+            document.getElementById('gameover-modal').classList.add('hidden');
+            document.getElementById('pause-modal').classList.add('hidden');
+            document.getElementById('game-hud').classList.remove('hidden');
+            document.getElementById('btn-camera-hud').classList.remove('hidden');
+            document.getElementById('btn-pause').classList.remove('hidden');
+
+            if (STATE.category === 'uber' || STATE.category === 'pool') {
+                document.getElementById('llevame-app-banner').classList.remove('hidden');
+                document.getElementById('app-title-badge').innerText = STATE.category === 'pool' ? '¡LLEVAME! POOL' : '¡LLEVAME! VIP';
+                assignNewPassenger();
+            } else {
+                document.getElementById('llevame-app-banner').classList.add('hidden');
+            }
+
+            if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+                document.getElementById('mobile-controls').classList.remove('hidden');
+            }
+        }
+
+        function togglePause() {
+            if (STATE.status === 'PLAYING') { STATE.status = 'PAUSED'; document.getElementById('pause-modal').classList.remove('hidden'); }
+            else if (STATE.status === 'PAUSED') { STATE.status = 'PLAYING'; document.getElementById('pause-modal').classList.add('hidden'); }
+        }
+
+        function returnToMenu() {
+            STATE.status = 'MENU';
+            document.getElementById('pause-modal').classList.add('hidden');
+            document.getElementById('gameover-modal').classList.add('hidden');
+            document.getElementById('game-hud').classList.add('hidden');
+            document.getElementById('llevame-app-banner').classList.add('hidden');
+            document.getElementById('btn-camera-hud').classList.add('hidden');
+            document.getElementById('btn-pause').classList.add('hidden');
+            document.getElementById('mobile-controls').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+        }
+
+        function endGame(reason) {
+            STATE.status = 'GAMEOVER';
+            document.getElementById('game-hud').classList.add('hidden');
+            document.getElementById('llevame-app-banner').classList.add('hidden');
+            document.getElementById('btn-camera-hud').classList.add('hidden');
+            document.getElementById('btn-pause').classList.add('hidden');
+            document.getElementById('mobile-controls').classList.add('hidden');
+
+            SAVE_DATA.coins += STATE.runCoins;
+            persistSaveData();
+
+            document.getElementById('go-title').innerText = reason;
+            document.getElementById('go-stat1').innerText = '🪙 ' + STATE.runCoins;
+            document.getElementById('gameover-modal').classList.remove('hidden');
+        }
+
+        // ============================================================================
+        // 8. MAIN LOOP
+        // ============================================================================
+        let lastTime = performance.now();
+
+        function updateGame(dt) {
+            if (rainSystem.visible) {
+                const posArr = rainSystem.geometry.attributes.position.array;
+                for (let i = 0; i < posArr.length; i += 3) {
+                    posArr[i + 1] -= dt * 55; if (posArr[i + 1] < 0) posArr[i + 1] = 45;
+                }
+                rainSystem.geometry.attributes.position.needsUpdate = true;
+                rainSystem.position.set(playerCarGroup.position.x, playerCarGroup.position.y, playerCarGroup.position.z - 20);
+            }
+
+            if (STATE.status === 'GARAGE') {
+                platformMesh.rotation.y += dt * 0.4;
+                camera.position.set(Math.sin(STATE.orbitAngle += dt * 0.5) * 6.2, 2.35, Math.cos(STATE.orbitAngle) * 6.2);
+                camera.lookAt(0, 1.0, 0);
+                return;
+            }
+            if (STATE.status === 'MENU') {
+                playerCarGroup.position.set(0, 0.3, 0);
+                camera.position.set(0, 3.5, 9); camera.lookAt(0, 1, 0);
+                audio.update(0, false, false);
+                return;
+            }
+            if (STATE.status !== 'PLAYING') return;
+
+            const eq = getEquippedStats();
+
+            // Controls
+            if (INPUT.nitro && PLAYER.nitro > 2) { PLAYER.isNitro = true; PLAYER.nitro = Math.max(0, PLAYER.nitro - dt * 25); }
+            else { PLAYER.isNitro = false; PLAYER.nitro = Math.min(100, PLAYER.nitro + dt * 9); }
+
+            const maxSpd = PLAYER.isNitro ? eq.maxSpeed * 1.4 : eq.maxSpeed;
+            if (INPUT.up || PLAYER.isNitro) PLAYER.speed += (PLAYER.isNitro ? eq.accel * 1.7 : eq.accel) * dt;
+            else if (INPUT.down) PLAYER.speed -= 75 * dt;
+            else PLAYER.speed -= 16 * dt;
+            PLAYER.speed = Math.max(12, Math.min(maxSpd, PLAYER.speed));
+
+            const steerInput = (INPUT.right ? 1 : 0) - (INPUT.left ? 1 : 0);
+            PLAYER.lateralVel += (steerInput * eq.handling * 1.25 - PLAYER.lateralVel) * Math.min(1, dt * 10);
+            PLAYER.laneOffset += PLAYER.lateralVel * dt;
+            const maxOff = ROAD_WIDTH / 2 - 1.5;
+            if (Math.abs(PLAYER.laneOffset) > maxOff) { PLAYER.laneOffset = Math.sign(PLAYER.laneOffset) * maxOff; PLAYER.speed *= 0.94; }
+
+            PLAYER.z -= PLAYER.speed * dt;
+            STATE.distance += PLAYER.speed * dt;
+
+            // Infinite Road Repositioning
+            roadSegments.forEach((seg, index) => {
+                if (seg.mesh.position.z > PLAYER.z + 40) {
+                    seg.mesh.position.z -= TOTAL_SEGS * SEG_LEN;
+                } else if (seg.mesh.position.z < PLAYER.z - (TOTAL_SEGS * SEG_LEN - 40)) {
+                    seg.mesh.position.z += TOTAL_SEGS * SEG_LEN;
+                } else {
+                    seg.mesh.position.z = Math.round((PLAYER.z - (index * SEG_LEN)) / SEG_LEN) * SEG_LEN;
+                }
+            });
+
+            playerCarGroup.position.set(PLAYER.laneOffset, 0.32, PLAYER.z);
+            playerCarGroup.rotation.set(0, 0, 0);
+
+            // App & Mission Logic
+            if (STATE.category === 'uber' || STATE.category === 'pool') {
+                STATE.timeLeft -= dt;
+                document.getElementById('hud-time-val').innerText = Math.max(0, STATE.timeLeft).toFixed(1) + 's';
+                if (STATE.timeLeft <= 0) { endGame('¡TURNO VENCIDO EN "¡LLEVAME!"!'); return; }
+
+                if (STATE.appState === 'pickup') {
+                    if (PLAYER.z <= STATE.passengerZ + 5) {
+                        STATE.appState = 'delivering';
+                        audio.playPowerup();
+                        document.getElementById('hud-banner-text').innerText = '¡PASAJERO ABORDO! RUMBO AL DESTINO';
+                        document.getElementById('hud-banner').style.opacity = '1';
+                        setTimeout(() => document.getElementById('hud-banner').style.opacity = '0', 1400);
+                        document.getElementById('llevame-msg').innerText = 'Conduciendo hacia el destino VIP...';
+                    }
+                } else if (STATE.appState === 'delivering') {
+                    if (PLAYER.z <= STATE.destZ + 5) {
+                        STATE.runCoins += STATE.passengerFare;
+                        audio.playCoin();
+                        document.getElementById('hud-banner-text').innerText = `¡DESTINO ALCANZADO! +🪙 ${STATE.passengerFare}`;
+                        document.getElementById('hud-banner').style.opacity = '1';
+                        setTimeout(() => document.getElementById('hud-banner').style.opacity = '0', 1400);
+                        document.getElementById('hud-score').innerText = '🪙 ' + STATE.runCoins;
+                        assignNewPassenger();
+                    }
+                }
+            } else {
+                document.getElementById('hud-time-val').innerText = Math.floor(STATE.distance) + ' m';
+                STATE.runCoins = Math.floor(STATE.distance / 12);
+                document.getElementById('hud-score').innerText = '🪙 ' + STATE.runCoins;
+            }
+
+            // Cameras
+            const kmh = PLAYER.speed * 3.15;
+            const wPos = playerCarGroup.position;
+            if (STATE.cameraIndex === 0) {
+                camera.position.set(wPos.x, wPos.y + 3.2, wPos.z + 8.5);
+                camera.lookAt(wPos.clone().add(new THREE.Vector3(0, 1, -15)));
+            } else if (STATE.cameraIndex === 1) {
+                camera.position.set(wPos.x - 0.35, wPos.y + 1.25, wPos.z - 0.2);
+                camera.lookAt(wPos.clone().add(new THREE.Vector3(0, 1.2, -30)));
+                updateCockpitTexture(kmh, 'D');
+            } else if (STATE.cameraIndex === 2) {
+                camera.position.set(wPos.x, wPos.y + 1.35, wPos.z + 0.5);
+                camera.lookAt(wPos.clone().add(new THREE.Vector3(0, 1, -30)));
+            } else {
+                camera.position.set(wPos.x, wPos.y + 14, wPos.z + 12);
+                camera.lookAt(wPos);
+            }
+
+            document.getElementById('hud-speed').innerText = Math.floor(kmh);
+            document.getElementById('hud-nitro-bar').style.width = Math.round(PLAYER.nitro) + '%';
+            document.getElementById('speed-lines').style.opacity = PLAYER.isNitro ? '1' : '0';
+
+            audio.update(PLAYER.speed / (eq.maxSpeed * 1.4), PLAYER.isNitro, true);
+        }
+
+        // ============================================================================
+        // 9. CONTROLS & LISTENERS
+        // ============================================================================
+        window.addEventListener('keydown', e => {
+            const k = e.key.toLowerCase();
+            if (k === 'arrowleft' || k === 'a') INPUT.left = true;
+            if (k === 'arrowright' || k === 'd') INPUT.right = true;
+            if (k === 'arrowup' || k === 'w') INPUT.up = true;
+            if (k === 'arrowdown' || k === 's') INPUT.down = true;
+            if (k === ' ') { INPUT.nitro = true; e.preventDefault(); }
+            if (k === 'c') cycleCamera();
+        });
+        window.addEventListener('keyup', e => {
+            const k = e.key.toLowerCase();
+            if (k === 'arrowleft' || k === 'a') INPUT.left = false;
+            if (k === 'arrowright' || k === 'd') INPUT.right = false;
+            if (k === 'arrowup' || k === 'w') INPUT.up = false;
+            if (k === 'arrowdown' || k === 's') INPUT.down = false;
+            if (k === ' ') INPUT.nitro = false;
+        });
+
+        function bindTouch(id, key) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const start = e => { e.preventDefault(); INPUT[key] = true; el.classList.add('active'); };
+            const end = e => { e.preventDefault(); INPUT[key] = false; el.classList.remove('active'); };
+            el.addEventListener('touchstart', start, { passive: false });
+            el.addEventListener('touchend', end, { passive: false });
+            el.addEventListener('mousedown', start); el.addEventListener('mouseup', end);
+        }
+        bindTouch('t-left', 'left'); bindTouch('t-right', 'right');
+        bindTouch('t-gas', 'up'); bindTouch('t-brake', 'down'); bindTouch('t-nitro', 'nitro');
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        function animate(now) {
+            requestAnimationFrame(animate);
+            const dt = Math.min(0.05, (now - lastTime) / 1000);
+            lastTime = now;
+            updateGame(dt);
+            renderer.render(scene, camera);
+        }
+
+        window.onload = function () {
+            loadSaveData();
+            buildCarModel('taxi');
+            setEnvironment('night');
+            
+            roadSegments.forEach((seg, i) => {
+                seg.mesh.position.set(0, 0, -i * SEG_LEN);
+            });
+
+            lastTime = performance.now();
+            animate(lastTime);
+        };
+    </script>
+</body>
+</html>
